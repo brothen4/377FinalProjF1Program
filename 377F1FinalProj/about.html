@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 Tracker — About</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 720px) { .about-grid { grid-template-columns: 1fr; } }
+
+    .about-text h2 {
+      font-size: .9rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      margin: 22px 0 10px; color: var(--text);
+    }
+    .about-text h2:first-child { margin-top: 0; }
+    .about-text p { font-size: .76rem; color: var(--muted); line-height: 1.9; margin-bottom: 10px; }
+    .about-text li {
+      font-size: .74rem; color: var(--muted);
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .about-text li::before { content: '▶'; color: var(--red); font-size: .48rem; flex-shrink: 0; }
+
+    .tech-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .t-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; }
+    .t-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .t-name { font-size: .66rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+    .t-desc { font-size: .68rem; color: var(--muted); line-height: 1.6; }
+
+    .api-table { width: 100%; border-collapse: collapse; font-size: .74rem; }
+    .api-table th {
+      text-align: left; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .api-table td { padding: 7px 0; border-bottom: 1px solid #181818; color: var(--muted); }
+    .api-table td:first-child { font-weight: 700; width: 56px; }
+    .api-table td:nth-child(2) { color: var(--text); font-family: var(--mono); font-size: .72rem; padding-right: 12px; }
+    .get  { color: var(--green); }
+    .post { color: var(--yellow); }
+
+    .browser-table { width: 100%; border-collapse: collapse; font-size: .74rem; margin-top: 8px; }
+    .browser-table th {
+      text-align: left; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .browser-table td { padding: 6px 0; border-bottom: 1px solid #181818; color: var(--muted); }
+    .browser-table td:first-child { color: var(--text); }
+    .chk { color: var(--green); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">F1<em>Tracker</em></a>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">Home</a>
+    <a href="telemetry.html">Telemetry</a>
+    <a href="about.html" class="active">About</a>
+  </div>
+  <div class="nav-toggle" id="navToggle">&#9776;</div>
+</nav>
+
+<div class="page-header">
+  <div class="wrap">
+    <p class="eyebrow">The Project</p>
+    <h1 class="page-title">About</h1>
+    <p class="page-sub">INST 377 Final Project — F1 Telemetry Tracker</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="about-grid">
+
+      <!-- Left: description + usage + browsers -->
+      <div class="about-text card">
+        <h2>What is F1 Tracker?</h2>
+        <p>
+          F1 Tracker is a full stack web application for exploring  F1 race telemetry.
+          Users can select any Grand Prix session from 2023 to 2025, choose two drivers,
+          and compare their laps side by side viewing speed, throttle, brake, RPM, and
+          gear traces as synchronized Chart.js line graphs, plus S1 / S2 / S3 sector times.
+        </p>
+        <p>
+          The home page shows the latest standings for constructor and driver championship. 
+          As well as a live countdown to the next race
+        </p>
+
+        <h2>How to Use Telemetry</h2>
+        <ul>
+          <li>Select a Season year from the dropdown</li>
+          <li>Select a Grand Prix from the list that appears</li>
+          <li>Select the session type (Race, Qualifying, Practice)</li>
+          <li>Click <strong>Load Session</strong> to pull driver and lap data</li>
+          <li>Click a lap row in the Driver A table, then one in Driver B</li>
+          <li>Click <strong>Compare Telemetry</strong> — charts and sector pills appear</li>
+        </ul>
+
+      <!-- Right: tech stack endpoints -->
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title">Tech Stack</div>
+          <div class="tech-grid">
+            <div class="t-card"><div class="t-icon">🟢</div><div class="t-name">Node / Express</div><div class="t-desc">Backend REST API serving JSON to the frontend.</div></div>
+            <div class="t-card"><div class="t-icon">🗄️</div><div class="t-name">Supabase</div><div class="t-desc">Hosted Postgres DB for persisting Pit Wall favourites.</div></div>
+            <div class="t-card"><div class="t-icon">🏎️</div><div class="t-name">OpenF1 API</div><div class="t-desc">Free public API — live sessions, laps, car telemetry.</div></div>
+            <div class="t-card"><div class="t-icon">📊</div><div class="t-name">Chart.js</div><div class="t-desc">5-channel telemetry charts: speed, throttle, brake, RPM, gear.</div></div>
+            <div class="t-card"><div class="t-icon">🎠</div><div class="t-name">Swiper.js</div><div class="t-desc">Touch-friendly driver carousel on the home page.</div></div>
+            <div class="t-card"><div class="t-icon">☁️</div><div class="t-name">Vercel</div><div class="t-desc">Deployment and hosting for the full-stack Node app.</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Backend API Endpoints</div>
+          <table class="api-table">
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="get">GET</td><td>/api/favorites</td><td>Read all saved drivers (Supabase)</td></tr>
+              <tr><td class="post">POST</td><td>/api/favorites</td><td>Save a new favourite driver (Supabase)</td></tr>
+              <tr><td class="get">GET</td><td>/api/f1/results</td><td>Latest race top-10 (OpenF1)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>F1 Tracker &mdash; INST 377 Final Project &mdash; Data via <a href="https://openf1.org" target="_blank">OpenF1</a></p>
+</footer>
+
+<script>
+  document.getElementById('navToggle').addEventListener('click', () =>
+    document.getElementById('navLinks').classList.toggle('open')
+  );
+</script>
+</body>
+</html>

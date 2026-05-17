@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 Tracker — Telemetry</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Session controls bar */
+    .ctrl-bar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: 150px 1fr 200px auto;
+      gap: 10px; align-items: end;
+    }
+    .ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+
+/* Status sits just below controls */
+    .status-wrap {
+      padding: 6px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /*  Two olumn layout sidebar, charts  */
+    .tele-layout {
+      display: grid;
+      grid-template-columns: 370px 1fr;
+      min-height: calc(100vh - 130px);
+    }
+
+    /*  Left sidebar  */
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      max-height: calc(100vh - 130px);
+    }
+    .sb-section { padding: 14px; border-bottom: 1px solid var(--border); }
+    .sb-label {
+      font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .lap-wrap { max-height: 210px; overflow-y: auto; margin-top: 8px; }
+
+    .compare-row {
+      padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border); background: var(--panel);
+    }
+    .cmp-info { font-size: 0.66rem; color: var(--muted); letter-spacing: 1px; }
+
+    /*  Right chart area  */
+    .chart-area { padding: 16px; overflow-y: auto; }
+
+    .placeholder {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 320px; gap: 12px;
+      color: var(--muted2); font-size: 0.7rem; letter-spacing: 2px; text-align: center;
+    }
+    .ph-icon { font-size: 3rem; opacity: .25; }
+
+    .legend-row {
+      display: flex; gap: 20px; align-items: center;
+      margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .leg-item { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; letter-spacing: 1px; }
+    .leg-pip  { width: 20px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+     /* Sector summary pills  */
+    .sector-pills { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .s-pill {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 2px; padding: 7px 12px; font-size: 0.68rem; letter-spacing: 1px;
+    }
+    .s-pill .s-lbl { color: var(--muted); font-size: 0.56rem; letter-spacing: 2px; display: block; margin-bottom: 3px; }
+    .s-pill .va { color: var(--red); }
+    .s-pill .vb { color: var(--cyan); }
+    .s-pill .faster { color: var(--green); font-weight: bold; }
+
+    /*  Chart grid  */
+    .chart-grid { display: flex; flex-direction: column; gap: 12px; }
+    .c-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; }
+    .c-label { font-size: 0.56rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .c-card canvas { max-height: 140px; }
+
+    /*  top borders on driver slots  */
+    .accent-a { border-top: 3px solid var(--red); }
+    .accent-b { border-top: 3px solid var(--cyan); }
+
+    @media (max-width: 900px) {
+      .tele-layout { grid-template-columns: 1fr; }
+      .sidebar { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+      .ctrl-bar { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 500px) {
+      .ctrl-bar { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">F1<em>Tracker</em></a>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">Home</a>
+    <a href="telemetry.html" class="active">Telemetry</a>
+    <a href="about.html">About</a>
+  </div>
+  <div class="nav-toggle" id="navToggle">&#9776;</div>
+</nav>
+
+<!-- Session Selection Controls  -->
+<div class="ctrl-bar">
+  <div class="ctrl-group">
+    <label class="label">Season</label>
+    <select class="select" id="yearSelect">
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label class="label">Grand Prix</label>
+    <select class="select" id="meetingSelect" disabled>
+      <option>— select year first —</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label class="label">Session</label>
+    <select class="select" id="sessionSelect" disabled>
+      <option>— select GP first —</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <button class="btn btn-red" id="loadSessionBtn" disabled>Load Session</button>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-wrap">
+  <div class="status" id="status">Select a year to get started.</div>
+</div>
+
+<!-- Main layout -->
+<div class="tele-layout">
+
+  <!-- Sidebar Driver A abd B selectors and lap tables -->
+  <aside class="sidebar">
+
+    <!-- Driver A slot -->
+    <div class="sb-section accent-a" id="slotA" style="display:none;">
+      <div class="sb-label" style="color:var(--red);">▌ Driver A</div>
+      <div class="ctrl-group">
+        <label class="label">Driver</label>
+        <select class="select" id="driverA"></select>
+      </div>
+      <div class="sb-label" style="margin-top:12px;">Lap Times — click to select</div>
+      <div class="lap-wrap">
+        <table class="tbl" id="lapTableA">
+          <thead><tr><th>Lap</th><th>Time</th><th>S1</th><th>S2</th><th>S3</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Driver B slot -->
+    <div class="sb-section accent-b" id="slotB" style="display:none;">
+      <div class="sb-label" style="color:var(--cyan);">▌ Driver B</div>
+      <div class="ctrl-group">
+        <label class="label">Driver</label>
+        <select class="select" id="driverB"></select>
+      </div>
+      <div class="sb-label" style="margin-top:12px;">Lap Times click to select</div>
+      <div class="lap-wrap">
+        <table class="tbl" id="lapTableB">
+          <thead><tr><th>Lap</th><th>Time</th><th>S1</th><th>S2</th><th>S3</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Compare button -->
+    <div class="compare-row" id="cmpRow" style="display:none;">
+      <button class="btn btn-red" id="compareBtn" disabled>Compare Telemetry</button>
+      <span class="cmp-info" id="cmpInfo">Select a lap for each driver</span>
+    </div>
+
+  </aside>
+
+  <!-- Chart area -->
+  <div class="chart-area">
+    <div class="placeholder" id="placeholder">
+      <span class="ph-icon">🏎</span>
+      <span>Load a session to begin</span>
+      <span style="font-size:.6rem;opacity:.4;">SELECT YEAR → GP → SESSION → LOAD</span>
+    </div>
+
+    <div id="charts" style="display:none;">
+      <div class="legend-row">
+        <div class="leg-item"><div class="leg-pip" style="background:var(--red);"></div><span id="legendA">Driver A</span></div>
+        <div class="leg-item"><div class="leg-pip" style="background:var(--cyan);"></div><span id="legendB">Driver B</span></div>
+      </div>
+      <!-- Sector summary (S1 S2 S3 + Total) -->
+      <div class="sector-pills" id="sectorPills"></div>
+      <!-- Telemetry charts -->
+      <div class="chart-grid">
+        <div class="c-card"><div class="c-label">Speed (km/h)</div><canvas id="chartSpeed"></canvas></div>
+        <div class="c-card"><div class="c-label">Throttle (%)</div><canvas id="chartThrottle"></canvas></div>
+        <div class="c-card"><div class="c-label">Brake</div><canvas id="chartBrake"></canvas></div>
+        <div class="c-card"><div class="c-label">RPM</div><canvas id="chartRpm"></canvas></div>
+        <div class="c-card"><div class="c-label">Gear</div><canvas id="chartGear"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p>F1 Tracker &mdash; INST 377 Final Project &mdash; Data via <a href="https://openf1.org" target="_blank">OpenF1</a></p>
+</footer>
+
+<script>
+/* 
+   F1 TELEMETRY Original logic by me
+   Integrated into multi-page site, stray text fixed,
+   sector pills added, layout refactored to sidebar/chart
+*/
+
+const API = 'https://api.openf1.org/v1';
+let sessions = [], drivers = [], laps = {}, charts = {};
+let currentSession = null;
+let selectedLapA = null, selectedLapB = null;
+let driverANum = null, driverBNum = null;
+
+// Nav tog
+document.getElementById('navToggle').addEventListener('click', () =>
+  document.getElementById('navLinks').classList.toggle('open')
+);
+
+// Helpers
+
+// Format seconds M:SS.sss or SS.ssss
+function fmtTime(secs) {
+  if (!secs) return '—';
+  const m = Math.floor(secs / 60);
+  const s = (secs % 60).toFixed(3).padStart(6, '0');
+  return m > 0 ? `${m}:${s}` : `${s}s`;
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status ' + type;
+}
+
+// Awaits fetch, checks r.ok, throws readable error to prevent parsing bad JSON
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// Destroy chart instance prevents memory leaks on render
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+/* load meetings */
+document.getElementById('yearSelect').addEventListener('change', async function () {
+  const year = this.value;
+  const meetSel = document.getElementById('meetingSelect');
+  const sessSel = document.getElementById('sessionSelect');
+  meetSel.disabled = true; sessSel.disabled = true;
+  document.getElementById('loadSessionBtn').disabled = true;
+  meetSel.innerHTML = '<option>Loading...</option>';
+  setStatus('Fetching meetings...', 'loading');
+  try {
+    const meetings = await fetchJSON(`${API}/meetings?year=${year}`);
+    meetings.sort((a, b) => a.meeting_key - b.meeting_key);
+    meetSel.innerHTML = meetings.map(m =>
+      `<option value="${m.meeting_key}">${m.country_name} — ${m.meeting_name}</option>`
+    ).join('');
+    meetSel.disabled = false;
+    setStatus(`${meetings.length} Grand Prix loaded for ${year}.`, 'ok');
+    // Auto fire so session list populates immediately
+    meetSel.dispatchEvent(new Event('change'));
+  } catch (e) {
+    setStatus('Failed to load meetings: ' + e.message, 'error');
+  }
+});
+
+// load sessions
+document.getElementById('meetingSelect').addEventListener('change', async function () {
+  const mk = this.value;
+  const sessSel = document.getElementById('sessionSelect');
+  sessSel.disabled = true;
+  document.getElementById('loadSessionBtn').disabled = true;
+  sessSel.innerHTML = '<option>Loading...</option>';
+  setStatus('Fetching sessions...', 'loading');
+  try {
+    sessions = await fetchJSON(`${API}/sessions?meeting_key=${mk}`);
+    sessions.sort((a, b) => a.session_key - b.session_key);
+    sessSel.innerHTML = sessions.map(s =>
+      `<option value="${s.session_key}">${s.session_name} (${s.session_type})</option>`
+    ).join('');
+    sessSel.disabled = false;
+    document.getElementById('loadSessionBtn').disabled = false;
+    setStatus('Ready. Click "Load Session".', 'ok');
+  } catch (e) {
+    setStatus('Failed to load sessions: ' + e.message, 'error');
+  }
+});
+
+/* Load session button */
+document.getElementById('loadSessionBtn').addEventListener('click', async function () {
+  const sk = document.getElementById('sessionSelect').value;
+  currentSession = sessions.find(s => s.session_key == sk);
+  setStatus('Loading drivers...', 'loading');
+  this.disabled = true;
+
+  // Reset UI
+  ['slotA','slotB','cmpRow'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('charts').style.display = 'none';
+  document.getElementById('placeholder').style.display = 'flex';
+
+  try {
+    drivers = await fetchJSON(`${API}/drivers?session_key=${sk}`);
+    drivers.sort((a, b) => a.driver_number - b.driver_number);
+
+    const dOpts = drivers.map(d =>
+      `<option value="${d.driver_number}">${d.driver_number} — ${d.full_name || d.name_acronym}</option>`
+    ).join('');
+
+    document.getElementById('driverA').innerHTML = dOpts;
+    document.getElementById('driverB').innerHTML = dOpts;
+    // Default B to a different driver
+    if (drivers.length > 1) document.getElementById('driverB').selectedIndex = 1;
+
+    document.getElementById('slotA').style.display = 'block';
+    document.getElementById('slotB').style.display = 'block';
+    document.getElementById('cmpRow').style.display = 'flex';
+
+    laps = {}; selectedLapA = null; selectedLapB = null;
+    updateCmpInfo();
+
+    setStatus(`Session loaded: ${currentSession.session_name} — ${drivers.length} drivers. Auto-loading laps...`, 'ok');
+    this.disabled = false;
+    await loadLapsForBoth();
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'error');
+    this.disabled = false;
+  }
+});
+
+// Load laps for one driver
+async function loadLaps(driverNum, sk) {
+  if (laps[driverNum]) return laps[driverNum];
+  const data = await fetchJSON(`${API}/laps?session_key=${sk}&driver_number=${driverNum}`);
+  data.sort((a, b) => a.lap_number - b.lap_number);
+  laps[driverNum] = data;
+  return data;
+}
+
+//Load laps for both selected drivers
+async function loadLapsForBoth() {
+  const sk = document.getElementById('sessionSelect').value;
+  driverANum = document.getElementById('driverA').value;
+  driverBNum = document.getElementById('driverB').value;
+  setStatus('Loading lap data...', 'loading');
+  try {
+    const [lapsA, lapsB] = await Promise.all([
+      loadLaps(driverANum, sk),
+      loadLaps(driverBNum, sk),
+    ]);
+    renderLapTable('lapTableA', lapsA, 'A');
+    renderLapTable('lapTableB', lapsB, 'B');
+    document.getElementById('placeholder').style.display = 'none';
+    setStatus('Click a lap row for each driver, then click Compare Telemetry.', 'ok');
+  } catch (e) {
+    setStatus('Error loading laps: ' + e.message, 'error');
+  }
+}
+
+// Render lap time table with S1 S2 S3 columns
+function renderLapTable(tableId, lapsData, slot) {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  tbody.innerHTML = '';
+
+  const times   = lapsData.map(l => l.lap_duration).filter(Boolean);
+  const fastest = Math.min(...times);
+
+  lapsData.forEach(lap => {
+    if (!lap.lap_duration) return;
+    const isFastest = lap.lap_duration === fastest;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${lap.lap_number}</td>
+      <td class="${isFastest ? 'fastest' : ''}">${fmtTime(lap.lap_duration)}${isFastest ? ' ⚡' : ''}</td>
+      <td>${fmtTime(lap.duration_sector_1)}</td>
+      <td>${fmtTime(lap.duration_sector_2)}</td>
+      <td>${fmtTime(lap.duration_sector_3)}</td>
+    `;
+    tr.addEventListener('click', () => selectLap(lap, slot, tr, tableId));
+    tbody.appendChild(tr);
+  });
+}
+
+// Select a lap row 
+function selectLap(lap, slot, tr, tableId) {
+  // Clear previous highlight in this table only
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(r =>
+    r.classList.remove('sel-a', 'sel-b')
+  );
+  tr.classList.add(slot === 'A' ? 'sel-a' : 'sel-b');
+
+  if (slot === 'A') selectedLapA = lap;
+  else              selectedLapB = lap;
+
+  // Only enable compare button when both laps selected
+  document.getElementById('compareBtn').disabled = !(selectedLapA && selectedLapB);
+  updateCmpInfo();
+}
+
+function updateCmpInfo() {
+  const a = selectedLapA ? `A: Lap ${selectedLapA.lap_number} (${fmtTime(selectedLapA.lap_duration)})` : 'A: select a lap';
+  const b = selectedLapB ? `B: Lap ${selectedLapB.lap_number} (${fmtTime(selectedLapB.lap_duration)})` : 'B: select a lap';
+  document.getElementById('cmpInfo').textContent = `${a}  ·  ${b}`;
+}
+
+// Driver change auto updates to show correct lap data for that year / driver
+document.getElementById('driverA').addEventListener('change', async () => { selectedLapA = null; await loadLapsForBoth(); });
+document.getElementById('driverB').addEventListener('change', async () => { selectedLapB = null; await loadLapsForBoth(); });
+
+// Compare button fetch telemetry and render charts
+document.getElementById('compareBtn').addEventListener('click', async () => {
+  if (!selectedLapA || !selectedLapB) {
+    setStatus('Please select a lap for each driver.', 'error'); return;
+  }
+
+  const sk   = document.getElementById('sessionSelect').value;
+  const dA   = document.getElementById('driverA');
+  const dB   = document.getElementById('driverB');
+  const nameA = dA.options[dA.selectedIndex].text;
+  const nameB = dB.options[dB.selectedIndex].text;
+
+  document.getElementById('legendA').textContent = `${nameA} — Lap ${selectedLapA.lap_number} (${fmtTime(selectedLapA.lap_duration)})`;
+  document.getElementById('legendB').textContent = `${nameB} — Lap ${selectedLapB.lap_number} (${fmtTime(selectedLapB.lap_duration)})`;
+
+  setStatus('Fetching telemetry data from OpenF1...', 'loading');
+
+  try {
+    const [telA, telB] = await Promise.all([
+      fetchTelemetry(sk, driverANum, selectedLapA),
+      fetchTelemetry(sk, driverBNum, selectedLapB),
+    ]);
+    renderCharts(telA, telB);
+    renderSectorPills(selectedLapA, selectedLapB);
+    document.getElementById('charts').style.display = 'block';
+    setStatus(`Comparing: ${nameA} Lap ${selectedLapA.lap_number} vs ${nameB} Lap ${selectedLapB.lap_number}`, 'ok');
+  } catch (e) {
+    setStatus('Error fetching telemetry: ' + e.message, 'error');
+  }
+});
+
+// Fetch car data for a lap window date_start, lap_duration
+async function fetchTelemetry(sk, driverNum, lap) {
+  // No lap start time formation lap or incomplete lap, skip
+  if (!lap.date_start) throw new Error('No lap start time available for this lap.');
+  const start  = encodeURIComponent(lap.date_start);
+  const endDt  = new Date(new Date(lap.date_start).getTime() + lap.lap_duration * 1000);
+  const end    = encodeURIComponent(endDt.toISOString());
+  return fetchJSON(`${API}/car_data?session_key=${sk}&driver_number=${driverNum}&date>=${start}&date<=${end}`);
+}
+
+// Normalize telemetry timestamps to Seconds from lap start
+function normalizeTelemetry(tel) {
+  if (!tel.length) return tel;
+  const t0 = new Date(tel[0].date).getTime();
+  return tel.map(d => ({ ...d, t: (new Date(d.date).getTime() - t0) / 1000 }));
+}
+
+// Render all 5 telemetry channel charts
+function renderCharts(telA, telB) {
+  const nA = normalizeTelemetry(telA);
+  const nB = normalizeTelemetry(telB);
+
+  const colorA = '#e10600', colorB = '#00d2ff';
+
+  const defs = [
+    { id: 'chartSpeed',    key: 'speed',    label: 'Speed (km/h)' },
+    { id: 'chartThrottle', key: 'throttle', label: 'Throttle (%)' },
+    { id: 'chartBrake',    key: 'brake',    label: 'Brake' },
+    { id: 'chartRpm',      key: 'rpm',      label: 'RPM' },
+    { id: 'chartGear',     key: 'n_gear',   label: 'Gear' },
+  ];
+
+  defs.forEach(({ id, key }) => {
+    destroyChart(id);
+    charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: 'Driver A', data: nA.map(d => ({ x: d.t, y: d[key] })),
+            borderColor: colorA, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+          { label: 'Driver B', data: nB.map(d => ({ x: d.t, y: d[key] })),
+            borderColor: colorB, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+        ],
+      },
+      options: {
+        responsive: true, animation: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+            titleColor: '#888', bodyColor: '#eee',
+            callbacks: { title: items => `t = ${parseFloat(items[0].label).toFixed(2)}s` },
+          },
+        },
+        scales: {
+          x: { type: 'linear', grid: { color: '#1a1a1a' },
+               ticks: { color: '#444', font: { size: 9, family: 'Courier New' }, maxTicksLimit: 12 } },
+          y: { grid: { color: '#1a1a1a' },
+               ticks: { color: '#444', font: { size: 9, family: 'Courier New' } } },
+        },
+      },
+    });
+  });
+}
+
+// Sector summary pill S1 S2 S3 Total with faster highlighted green
+function renderSectorPills(lapA, lapB) {
+  const sectors = [
+    { label: 'S1',    a: lapA.duration_sector_1, b: lapB.duration_sector_1 },
+    { label: 'S2',    a: lapA.duration_sector_2, b: lapB.duration_sector_2 },
+    { label: 'S3',    a: lapA.duration_sector_3, b: lapB.duration_sector_3 },
+    { label: 'Total', a: lapA.lap_duration,       b: lapB.lap_duration },
+  ];
+
+  document.getElementById('sectorPills').innerHTML = sectors.map(({ label, a, b }) => {
+    let ca = 'va', cb = 'vb';
+    if (a && b) {
+      if (a < b) ca += ' faster';
+      else if (b < a) cb += ' faster';
+    }
+    return `
+      <div class="s-pill">
+        <span class="s-lbl">${label}</span>
+        <span class="${ca}">${fmtTime(a)}</span>
+        <span style="color:var(--muted)"> vs </span>
+        <span class="${cb}">${fmtTime(b)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// trigger year change on page load
+document.getElementById('yearSelect').dispatchEvent(new Event('change'));
+</script>
+
+</body>
+</html>

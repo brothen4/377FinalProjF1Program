@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+     /* Hero */
+    .hero {
+      position: relative; overflow: hidden;
+      min-height: 50vh; display: flex; align-items: center;
+      padding: 60px 20px;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        repeating-linear-gradient(0deg,   transparent, transparent 49px, rgba(255,255,255,.022) 50px),
+        repeating-linear-gradient(90deg,  transparent, transparent 49px, rgba(255,255,255,.022) 50px);
+    }
+    .hero-glow {
+      position: absolute; right: -5%; top: 50%; transform: translateY(-50%);
+      width: 55vw; height: 55vw; border-radius: 50%;
+      background: radial-gradient(circle, rgba(225,6,0,.13) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-inner { position: relative; margin-left: max(20px, 5vw); }
+    .hero-title {
+      font-size: clamp(3rem, 12vw, 8rem);
+      font-weight: 900; letter-spacing: 6px; text-transform: uppercase;
+      line-height: .88; margin-bottom: 28px;
+    }
+    .hero-title .red { color: var(--red); display: block; }
+    .hero-desc {
+      font-size: .8rem; color: var(--muted); line-height: 1.9;
+      max-width: 440px; margin-bottom: 32px; letter-spacing: .5px;
+    }
+    .hero-ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Main content grid */
+    .home-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      padding: 32px 20px 52px;
+      max-width: 1320px;
+      margin: 0 auto;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .home-grid { grid-template-columns: 1fr; } }
+
+    /* Standings table */
+    .standings-wrap { overflow-x: auto; }
+    .sec-label { font-size: .58rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .sec-title { font-size: 1.6rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+
+    .standings-tbl { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .standings-tbl th {
+      position: sticky; top: 0; background: var(--bg2);
+      color: var(--muted); font-size: .58rem; letter-spacing: 2px;
+      text-transform: uppercase; padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .standings-tbl td { padding: 8px 10px; border-bottom: 1px solid #181818; white-space: nowrap; }
+    .standings-tbl tr:hover td { background: #141414; }
+
+    .pos-col { font-family: var(--mono); font-weight: 900; color: var(--muted); width: 36px; }
+    .pos-col.p1 { color: var(--yellow); }
+    .pos-col.p2 { color: #c0c0c0; }
+    .pos-col.p3 { color: #cd7f32; }
+
+    .driver-col { font-weight: 700; letter-spacing: .5px; }
+    .team-col   { color: var(--muted); font-size: .7rem; }
+    .pts-col    { font-weight: 900; color: var(--text); text-align: right; }
+    .wins-col   { color: var(--muted); text-align: right; font-size: .72rem; }
+
+    .nat-badge {
+      display: inline-block; font-size: 1rem;
+      margin-right: 6px; vertical-align: middle;
+    }
+
+    /* Right column */
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Next Race card */
+    .next-race-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--red);
+      border-radius: var(--r);
+      padding: 20px;
+    }
+    .nr-eyebrow {
+      font-size: .56rem; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--red); margin-bottom: 10px;
+    }
+    .nr-name {
+      font-size: 1.3rem; font-weight: 900; letter-spacing: 2px;
+      text-transform: uppercase; line-height: 1.1; margin-bottom: 4px;
+    }
+    .nr-circuit {
+      font-size: .7rem; color: var(--muted); letter-spacing: 1px; margin-bottom: 18px;
+    }
+
+    /* Countdown */
+    .countdown {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px; margin-bottom: 20px;
+    }
+    .cd-block {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 10px 6px; text-align: center;
+    }
+    .cd-num {
+      font-size: 1.8rem; font-weight: 900; letter-spacing: 2px;
+      color: var(--red); line-height: 1; display: block;
+    }
+    .cd-label {
+      font-size: .5rem; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-top: 4px; display: block;
+    }
+
+    /* Timezone table */
+    .tz-table { width: 100%; border-collapse: collapse; font-size: .74rem; }
+    .tz-table tr { border-bottom: 1px solid var(--border); }
+    .tz-table tr:last-child { border-bottom: none; }
+    .tz-table td { padding: 7px 4px; }
+    .tz-table td:first-child { color: var(--muted); font-size: .64rem; letter-spacing: 1px; text-transform: uppercase; }
+    .tz-table td:last-child  { text-align: right; font-weight: 700; color: var(--text); }
+
+    /* Constructor standings (smaller card) */
+    .constructor-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+    }
+    .constructor-tbl { width: 100%; border-collapse: collapse; font-size: .74rem; }
+    .constructor-tbl td { padding: 6px 4px; border-bottom: 1px solid #181818; }
+    .constructor-tbl tr:last-child td { border-bottom: none; }
+    .constructor-tbl tr:hover td { background: #141414; }
+    .con-pos { font-weight: 900; color: var(--muted); width: 28px; }
+    .con-pos.p1 { color: var(--yellow); }
+    .con-pos.p2 { color: #c0c0c0; }
+    .con-pos.p3 { color: #cd7f32; }
+    .con-name { font-weight: 700; }
+    .con-pts  { text-align: right; font-weight: 900; }
+
+    /* skeleton */
+    .skel {
+      background: linear-gradient(90deg, var(--panel) 25%, var(--border) 50%, var(--panel) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 2px;
+      display: inline-block;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skel-row td { padding: 8px 10px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">F1<em>Tracker</em></a>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html" class="active">Home</a>
+    <a href="telemetry.html">Telemetry</a>
+    <a href="about.html">About</a>
+  </div>
+  <div class="nav-toggle" id="navToggle">&#9776;</div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <p class="eyebrow">F1</p>
+    <h1 class="hero-title">Race.<br /><span class="red">Data.</span>Speed.</h1>
+    <p class="hero-desc">Live telemetry comparisons, lap breakdowns, and race results — Powered by OpenF1 API.</p>
+    <div class="hero-ctas">
+      <a href="telemetry.html" class="btn btn-red">Open Telemetry</a>
+      <a href="about.html" class="btn">About the Project</a>
+    </div>
+  </div>
+</header>
+
+<!-- Main grid standings next race -->
+<div class="home-grid">
+
+  <!-- Driver Standings -->
+  <div>
+    <p class="sec-label">2025 Season</p>
+    <h2 class="sec-title">Driver Standings</h2>
+    <div class="standings-wrap card" style="padding:0;">
+      <table class="standings-tbl">
+        <thead>
+          <tr>
+            <th style="width:36px;">Pos</th>
+            <th>Driver</th>
+            <th>Team</th>
+            <th style="text-align:right;">Pts</th>
+            <th style="text-align:right;">Wins</th>
+          </tr>
+        </thead>
+        <tbody id="standingsBody">
+          <!-- skeleton rows -->
+          <tr class="skel-row"><td colspan="5"><div class="skel" style="height:14px;width:100%;"></div></td></tr>
+          <tr class="skel-row"><td colspan="5"><div class="skel" style="height:14px;width:90%;"></div></td></tr>
+          <tr class="skel-row"><td colspan="5"><div class="skel" style="height:14px;width:95%;"></div></td></tr>
+          <tr class="skel-row"><td colspan="5"><div class="skel" style="height:14px;width:85%;"></div></td></tr>
+          <tr class="skel-row"><td colspan="5"><div class="skel" style="height:14px;width:92%;"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Next Race Constructor Standings -->
+  <div class="right-col">
+
+    <!-- Next Race card -->
+    <div class="next-race-card">
+      <div class="nr-eyebrow">▶ Up Next</div>
+      <div class="nr-name" id="nextRaceName">Loading...</div>
+      <div class="nr-circuit" id="nextRaceCircuit"></div>
+
+      <!-- Countdown timer -->
+      <div class="countdown">
+        <div class="cd-block"><span class="cd-num" id="cdDays">--</span><span class="cd-label">Days</span></div>
+        <div class="cd-block"><span class="cd-num" id="cdHours">--</span><span class="cd-label">Hours</span></div>
+        <div class="cd-block"><span class="cd-num" id="cdMins">--</span><span class="cd-label">Mins</span></div>
+        <div class="cd-block"><span class="cd-num" id="cdSecs">--</span><span class="cd-label">Secs</span></div>
+      </div>
+
+      <!-- US Timezones -->
+      <table class="tz-table">
+        <tr>
+          <td>🌊 East Coast (ET)</td>
+          <td id="tzET">—</td>
+        </tr>
+        <tr>
+          <td>🌾 Central (CT)</td>
+          <td id="tzCT">—</td>
+        </tr>
+        <tr>
+          <td>🌅 West Coast (PT)</td>
+          <td id="tzPT">—</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Constructor Standings -->
+    <div class="constructor-card">
+      <p class="sec-label" style="margin-bottom:10px;">2025 Constructor Standings</p>
+      <table class="constructor-tbl">
+        <tbody id="constructorBody">
+          <tr><td colspan="3"><div class="skel" style="height:12px;width:100%;"></div></td></tr>
+          <tr><td colspan="3"><div class="skel" style="height:12px;width:85%;"></div></td></tr>
+          <tr><td colspan="3"><div class="skel" style="height:12px;width:90%;"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <p>F1 Tracker &mdash; INST 377 Final Project &mdash; Data via <a href="https://openf1.org" target="_blank">OpenF1</a> & <a href="https://jolpi.ca" target="_blank">Jolpica</a></p>
+</footer>
+
+<script>
+// Nav Toggle
+document.getElementById('navToggle').addEventListener('click', () =>
+  document.getElementById('navLinks').classList.toggle('open')
+);
+
+// Flags
+const FLAG = { NED:'🇳🇱',GBR:'🇬🇧',MON:'🇲🇨',AUS:'🇦🇺',MEX:'🇲🇽',
+  ESP:'🇪🇸',FIN:'🇫🇮',FRA:'🇫🇷',GER:'🇩🇪',CAN:'🇨🇦',JPN:'🇯🇵',
+  DEN:'🇩🇰',CHN:'🇨🇳',THA:'🇹🇭',USA:'🇺🇸',ITA:'🇮🇹',BRA:'🇧🇷',
+  BEL:'🇧🇪',CHE:'🇨🇭',ARG:'🇦🇷',NZL:'🇳🇿',MON:'🇲🇨',GBR:'🇬🇧',
+  FRA:'🇫🇷',AUT:'🇦🇹' };
+const flag = c => FLAG[c] || '🏁';
+
+// Jolpica (Ergast successor) called directly from browser
+const JOLPICA = 'https://api.jolpi.ca/ergast/f1';
+
+// FETCH 1 Driver standings from Jolpica
+async function loadStandings() {
+  try {
+    const res  = await fetch(`${JOLPICA}/2025/driverStandings/`);
+    const json = await res.json();
+    const list = json.MRData.StandingsTable.StandingsLists[0]?.DriverStandings || [];
+
+    const posClass = p => p == 1 ? 'p1' : p == 2 ? 'p2' : p == 3 ? 'p3' : '';
+
+    document.getElementById('standingsBody').innerHTML = list.map(s => `
+      <tr>
+        <td class="pos-col ${posClass(s.position)}">${s.position}</td>
+        <td class="driver-col">
+          <span class="nat-badge">${flag(s.Driver.nationality?.slice(0,3).toUpperCase()) || '🏁'}</span>
+          ${s.Driver.givenName} ${s.Driver.familyName}
+        </td>
+        <td class="team-col">${s.Constructors[0]?.name || '—'}</td>
+        <td class="pts-col">${s.points}</td>
+        <td class="wins-col">${s.wins}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Standings error:', e);
+    document.getElementById('standingsBody').innerHTML =
+      '<tr><td colspan="5" style="padding:16px;color:var(--muted);text-align:center;">Could not load standings.</td></tr>';
+  }
+}
+
+// FETCH Constructor standings from Jolpica
+async function loadConstructors() {
+  try {
+    const res  = await fetch(`${JOLPICA}/2025/constructorStandings/`);
+    const json = await res.json();
+    const list = json.MRData.StandingsTable.StandingsLists[0]?.ConstructorStandings || [];
+
+    const posClass = p => p == 1 ? 'p1' : p == 2 ? 'p2' : p == 3 ? 'p3' : '';
+
+    document.getElementById('constructorBody').innerHTML = list.map(s => `
+      <tr>
+        <td class="con-pos ${posClass(s.position)}">${s.position}</td>
+        <td class="con-name">${s.Constructor.name}</td>
+        <td class="con-pts">${s.points}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Constructor standings error:', e);
+  }
+}
+
+// FETCH 3 next race from Jolpica countdown
+let countdownInterval = null;
+
+async function loadNextRace() {
+  try {
+    const res  = await fetch(`${JOLPICA}/2025/next/`);
+    const json = await res.json();
+    const race = json.MRData.RaceTable.Races[0];
+
+    if (!race) {
+      document.getElementById('nextRaceName').textContent = 'Season Complete';
+      document.getElementById('nextRaceCircuit').textContent = 'No upcoming races.';
+      return;
+    }
+
+    document.getElementById('nextRaceName').textContent = race.raceName;
+    document.getElementById('nextRaceCircuit').textContent =
+      `${race.Circuit.circuitName} — ${race.Circuit.Location.locality}, ${race.Circuit.Location.country}`;
+
+    // Race date and time
+    const raceDateTime = new Date(`${race.date}T${race.time || '14:00:00Z'}`);
+
+    // US timezone formatted times
+    const fmtOpts = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
+    document.getElementById('tzET').textContent =
+      raceDateTime.toLocaleString('en-US', { ...fmtOpts, timeZone: 'America/New_York' });
+    document.getElementById('tzCT').textContent =
+      raceDateTime.toLocaleString('en-US', { ...fmtOpts, timeZone: 'America/Chicago' });
+    document.getElementById('tzPT').textContent =
+      raceDateTime.toLocaleString('en-US', { ...fmtOpts, timeZone: 'America/Los_Angeles' });
+
+    // Live countdown
+    if (countdownInterval) clearInterval(countdownInterval);
+    function tick() {
+      const now  = new Date();
+      const diff = raceDateTime - now;
+      if (diff <= 0) {
+        ['cdDays','cdHours','cdMins','cdSecs'].forEach(id => document.getElementById(id).textContent = '00');
+        clearInterval(countdownInterval);
+        return;
+      }
+      const days  = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const mins  = Math.floor((diff % 3600000)  / 60000);
+      const secs  = Math.floor((diff % 60000)    / 1000);
+      document.getElementById('cdDays').textContent  = String(days).padStart(2,'0');
+      document.getElementById('cdHours').textContent = String(hours).padStart(2,'0');
+      document.getElementById('cdMins').textContent  = String(mins).padStart(2,'0');
+      document.getElementById('cdSecs').textContent  = String(secs).padStart(2,'0');
+    }
+    tick();
+    countdownInterval = setInterval(tick, 1000);
+
+  } catch (e) {
+    console.error('Next race error:', e);
+    document.getElementById('nextRaceName').textContent = 'Unavailable';
+    document.getElementById('nextRaceCircuit').textContent = 'Could not load race data.';
+  }
+}
+
+loadStandings();
+loadConstructors();
+loadNextRace();
+</script>
+</body>
+</html>
