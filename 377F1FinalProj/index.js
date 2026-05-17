@@ -23,6 +23,10 @@ app.get('/about.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'about.html'));
 });
 
+app.get('/styles.css', (req, res) => {
+  res.sendFile(path.join(__dirname, 'styles.css'));
+});
+
 // Client
 const sb = supabase.createClient(
   process.env.SUPABASE_URL || 'https://ekrqvjzsegifqcsupijl.supabase.co',
