@@ -35,7 +35,7 @@ No polyfills required. The app uses CSS Grid, CSS Custom Properties, Fetch API, 
 
 ## Live Demo
 
-🔗 **[https://f1-tracker.vercel.app](https://f1-tracker.vercel.app)** *(update after deploying)*
+https://377-final-proj-f1-program-neu8c8rik-benja-roth-s-projects.vercel.app
 
 ---
 
