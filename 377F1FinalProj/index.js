@@ -10,9 +10,17 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname)));
 
-// Explicit root route for Vercel
+// Explicit routes for Vercel
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/telemetry.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'telemetry.html'));
+});
+
+app.get('/about.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'about.html'));
 });
 
 // Client
